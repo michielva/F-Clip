@@ -7,3 +7,6 @@ albumentations~=1.2.0
 azure-storage-file-share==12.7.0
 progressbar==2.5
 Markupsafe==2.0.1
+pyyaml
+docopt
+scikit-image
