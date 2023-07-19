@@ -1,0 +1,9 @@
+opencv-python==4.5.1.48
+imgaug==0.4.0
+Jinja2==2.11.2
+MarkupSafe==2.0.1
+azureml-core==1.46.0
+albumentations~=1.2.0
+azure-storage-file-share==12.7.0
+progressbar==2.5
+Markupsafe==2.0.1
