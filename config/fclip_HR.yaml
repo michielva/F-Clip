@@ -1,5 +1,5 @@
 io:
-  dataname: shanghaiTech  # york, shanghaiTech
+  dataname: york  # york, shanghaiTech
   resume_from:  # ckpt path when the program was stopped by accident
   model_initialize_file:
 

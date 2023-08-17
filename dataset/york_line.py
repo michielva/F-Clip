@@ -106,7 +106,7 @@ def save_heatmap(prefix, image, lines):
 
 if __name__ == '__main__':
 
-    root = "/home/dxl/Data/york/valid/"
+    root = "/nas/UnivisionAI/development/bevel/fclp/york/valid/"
 
     filelist = glob.glob(f"{root}/*_label.npz")
 
