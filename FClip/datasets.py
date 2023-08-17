@@ -28,6 +28,7 @@ class LineDataset(Dataset):
         if dataset in ["shanghaiTech", "york"]:
             filelist = glob.glob(f"{rootdir}/{split}/*_label.npz")
             filelist.sort()
+            print(len(filelist))
         else:
             raise ValueError("no such dataset")
 
