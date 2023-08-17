@@ -6,7 +6,9 @@
     },
     "runArgs": [
         "--gpus",
-        "all"
+        "all",
+        "--ipc",
+        "host"
     ],
     "mounts": [
         "source=/mnt/win_share, target=/nas, type=bind, consistency=cached"
