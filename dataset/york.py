@@ -100,8 +100,8 @@ def save_heatmap(prefix, image, lines):
     lneg.sort(key=lambda l: -l[-1])
 
     junc = np.array(junc, dtype=np.float32)
-    Lpos = np.array(lnid, dtype=np.int)
-    Lneg = np.array([l[2:4] for l in lneg][:4000], dtype=np.int)
+    Lpos = np.array(lnid, dtype=np.int64)
+    Lneg = np.array([l[2:4] for l in lneg][:4000], dtype=np.int64)
     lpos = np.array(lpos, dtype=np.float32)
     lneg = np.array([l[:2] for l in lneg[:2000]], dtype=np.float32)
 

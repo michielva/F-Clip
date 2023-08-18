@@ -23,9 +23,9 @@ def collate(batch):
 
 class LineDataset(Dataset):
     def __init__(self, rootdir, split, dataset="shanghaiTech"):
-        print("dataset:", dataset)
+        print("dataset - test:", dataset)
         self.rootdir = rootdir
-        if dataset in ["shanghaiTech", "york"]:
+        if dataset in ["shanghaiTech", "york", "bevel"]:
             filelist = glob.glob(f"{rootdir}/{split}/*_label.npz")
             filelist.sort()
             print(len(filelist))

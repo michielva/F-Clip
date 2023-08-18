@@ -287,6 +287,7 @@ if __name__ == '__main__':
         # Get points and descriptors.
         start1 = time.time()
         lines = detector.detect(oriimg)
+        print('lines')
         end1 = time.time()
 
         out = oriimg
@@ -298,6 +299,7 @@ if __name__ == '__main__':
             # cv.line(out, lines[i, 0, ::-1], lines[i, 1, ::-1], (110, 215, 245), 2, lineType=16)
 
         cv.imwrite(f"{opt.output_dir}/{vs.i:04}.png", out)
+        print('image saved')
 
         # Display visualization image to screen.
         if opt.display:
