@@ -133,16 +133,13 @@ def save_heatmap(path, image, lines, data_dst):
 
     # save images
     Path(data_dst).joinpath('plots').mkdir(parents=False, exist_ok=True)
-    plt.subplot(131), plt.imshow(lmap)
-    plt.subplot(132), plt.imshow(image)
+    plt.imshow(image)
     for i0, i1 in Lpos:
         plt.scatter(junc[i0][1] * 4, junc[i0][0] * 4)
         plt.scatter(junc[i1][1] * 4, junc[i1][0] * 4)
         plt.plot([junc[i0][1] * 4, junc[i1][1] * 4], [junc[i0][0] * 4, junc[i1][0] * 4])
-    plt.subplot(133), plt.imshow(lmap)
-    for i0, i1 in Lneg[:150]:
-        plt.plot([junc[i0][1], junc[i1][1]], [junc[i0][0], junc[i1][0]])
-    plt.savefig(Path(data_dst).joinpath(f'plots/{prefix}.png'))
+    plt.savefig(Path(data_dst).joinpath(f'plots/{prefix}_gt_line.png'))
+    plt.close()
 
     # save _label.npz file
     np.savez_compressed(
