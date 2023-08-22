@@ -50,94 +50,64 @@ def save_heatmap(path, image, lines, data_dst):
             continue
         angle[vint] = np.sum((vv - v) * np.array([0., 1.])) / np.sqrt(np.sum((vv - v) ** 2))  # theta
 
-    # make folder & set default plot font size & colors
+    # make folder & set default plot font size
     Path(data_dst).joinpath('plots').mkdir(exist_ok=True, parents=False)
     plt.rcParams.update({'font.size': 30})
-    colors_list = ['#c7c5c5', '#34eb6e']
-    cmap = colors.ListedColormap(colors_list)
 
     # plot the ground truth heatmap for line center
     plt.figure(figsize=(30, 30))
-    plt.imshow(lcmap, cmap=cmap, vmin=0, vmax=1)
+    plt.imshow(lcmap, cmap='Oranges', vmin=0, vmax=1)
     plt.title('Ground truth heatmap for line center (lcmap)', fontsize=36)
     plt.xlabel('X', fontsize=36)
     plt.ylabel('Y', fontsize=36)
-    for y, x in np.transpose(np.where(lcmap > 0)):
+    for y, x in np.transpose(np.where(lcmap != 0)):
         plt.annotate(str(lcmap[y, x]), xy=(x, y), ha='left', va='bottom', fontsize=24)
     plt.savefig(Path(data_dst).joinpath('plots', f'{prefix}_heatmap_lcmap.png'))
     plt.close()
 
     # plot the ground truth heatmap for line length
     plt.figure(figsize=(30, 30))
-    plt.imshow(lleng, cmap=cmap, vmin=0, vmax=1)
+    plt.imshow(lleng, cmap='Oranges', vmin=0, vmax=1)
     plt.title('Ground truth heatmap for line length (lleng) - actually 1/2 of total length', fontsize=36)
     plt.xlabel('X', fontsize=36)
     plt.ylabel('Y', fontsize=36)
-    for y, x in np.transpose(np.where(lleng > 0)):
+    for y, x in np.transpose(np.where(lleng != 0)):
         plt.annotate(str(lleng[y, x]), xy=(x, y), ha='left', va='bottom', fontsize=24)
     plt.savefig(Path(data_dst).joinpath('plots', f'{prefix}_heatmap_lleng.png'))
-    plt.close()
-
-    # plot the ground truth heatmap for line angle
-    plt.figure(figsize=(30, 30))
-    # plt.imshow(angle, cmap=cmap, vmin=-1, vmax=1)
-    plt.imshow(angle)
-    plt.title('Ground truth heatmap for line angle', fontsize=36)
-    plt.xlabel('X', fontsize=36)
-    plt.ylabel('Y', fontsize=36)
-    for y, x in np.transpose(np.where(angle != 0)):
-        plt.scatter(x, y=y, color='green', s=40)
-        plt.annotate(str(angle[y, x]), xy=(x, y), ha='left', va='bottom', fontsize=24)
-    plt.savefig(Path(data_dst).joinpath('plots', f'{prefix}_heatmap_angle.png'))
     plt.close()
 
     # plot the ground truth heatmap for the offsets length
     plt.figure(figsize=(60, 30))
-    plt.subplots(121)
-    plt.imshow(lcoff[0], cmap=cmap, vmin=0, vmax=1)
-    plt.title('Ground truth heatmap for line length (lleng) - actually 1/2 of total length', fontsize=36)
+    plt.subplot(1, 2, 1)
+    plt.imshow(lcoff[0], cmap='Oranges', vmin=-0.5, vmax=0.5)
+    plt.title('Ground truth heatmap for line center offsets (y)', fontsize=36)
     plt.xlabel('X', fontsize=36)
     plt.ylabel('Y', fontsize=36)
-    for y, x in np.transpose(np.where(lleng > 0)):
-        plt.annotate(str(lleng[y, x]), xy=(x, y), ha='left', va='bottom', fontsize=24)
-    plt.subplots(122)
-    plt.savefig(Path(data_dst).joinpath('plots', f'{prefix}_heatmap_lleng.png'))
+    for y, x in np.transpose(np.where(lcoff[0] != 0)):
+        plt.annotate(str(lcoff[0][y, x]), xy=(x, y), ha='left', va='bottom', fontsize=24)
+    plt.subplot(1, 2, 2)
+    plt.imshow(lcoff[1], cmap='Oranges', vmin=-0.5, vmax=0.5)
+    plt.title('Ground truth heatmap for line center offsets (x)', fontsize=36)
+    plt.xlabel('X', fontsize=36)
+    plt.ylabel('Y', fontsize=36)
+    for y, x in np.transpose(np.where(lcoff[1] != 0)):
+        plt.annotate(str(lcoff[1][y, x]), xy=(x, y), ha='left', va='bottom', fontsize=24)
+    plt.savefig(Path(data_dst).joinpath('plots', f'{prefix}_heatmap_offsets.png'))
     plt.close()
 
-    # coor = np.argwhere(lcmap == 1)
-    # for yx in coor:
-    #     offset = lcoff[:, int(yx[0]), int(yx[1])]
-    #     length = lleng[int(yx[0]), int(yx[1])]
-    #     theta = angle[int(yx[0]), int(yx[1])]
-    #
-    #     center = yx + offset
-    #     d = np.array([-np.sqrt(1-theta**2), theta])
-    #     plt.scatter(center[1]*4, center[0]*4, c="b")
-    #
-    #     plt.arrow(center[1]*4, center[0]*4, d[1]*length*4, d[0]*length*4,
-    #               length_includes_head=True,
-    #               head_width=15, head_length=25, fc='r', ec='b')
-
-    # plt.savefig(f"{prefix}_line.png", dpi=200), plt.close()
-
-    # plt.subplot(122), \
-    # plt.imshow(image)
-    # coor = np.argwhere(lcmap == 1)
-    # for yx in coor:
-    #     offset = lcoff[:, int(yx[0]), int(yx[1])]
-    #     length = lleng[int(yx[0]), int(yx[1])]
-    #     theta = angle[int(yx[0]), int(yx[1])]
-    #
-    #     center = yx + offset
-    #     d = np.array([-np.sqrt(1-theta**2), theta])
-    #
-    #     n0 = center + d * length
-    #     n1 = center - d * length
-    #     plt.plot([n0[1] * 4, n1[1] * 4], [n0[0] * 4, n1[0] * 4])
-    # plt.savefig(f"{prefix[-8:]}_line.png", dpi=100), plt.close()
+    # plot the ground truth heatmap for line angle
+    plt.figure(figsize=(30, 30))
+    plt.imshow(np.abs(angle), cmap='Oranges', vmin=0, vmax=1)
+    plt.title('Ground truth heatmap for line angle', fontsize=36)
+    plt.xlabel('X', fontsize=36)
+    plt.ylabel('Y', fontsize=36)
+    for y, x in np.transpose(np.where(angle != 0)):
+        plt.annotate(str(angle[y, x]), xy=(x, y), ha='left', va='bottom', fontsize=24)
+    plt.savefig(Path(data_dst).joinpath('plots', f'{prefix}_heatmap_angle.png'))
+    plt.close()
 
     np.savez_compressed(
-        f"{prefix}_line.npz",
+        Path(data_dst).joinpath(f"{prefix}_line.npz"),
         lcmap=lcmap,
         lcoff=lcoff,
         lleng=lleng,
