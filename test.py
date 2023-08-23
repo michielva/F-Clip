@@ -27,6 +27,7 @@ from skimage import io
 import matplotlib as mpl
 mpl.use('Qt5Agg')
 import matplotlib.pyplot as plt
+from collections import OrderedDict
 import numpy as np
 import torch
 from docopt import docopt
@@ -37,7 +38,6 @@ from FClip.datasets import LineDataset as WireframeDataset
 
 from FClip.models import MultitaskHead, hg, hgl, hr
 from FClip.models.stage_1 import FClip
-
 
 
 _PLOT_nlines = 100
@@ -95,17 +95,35 @@ def build_model(cpu=False):
         raise NotImplementedError
 
     model = FClip(model)
+    print(f"model step 1")
 
     if M.backbone == "hrnet":
         model = model.cuda()
         model = torch.nn.DataParallel(model)
+    print(f'model initialize file: {C.io.model_initialize_file}')
+
+    print("model step 2")
 
     if C.io.model_initialize_file:
         if cpu:
             checkpoint = torch.load(C.io.model_initialize_file, map_location=torch.device('cpu'))
         else:
             checkpoint = torch.load(C.io.model_initialize_file)
-        model.load_state_dict(checkpoint["model_state_dict"])
+
+        # fix for state_dict errors
+        new_state_dict = OrderedDict()
+        for k, v in checkpoint['model_state_dict'].items():
+            print(k)
+            if k.startswith('backbone'):
+                new_state_dict['module.' + k] = v
+                print(f'changed name for {k}')
+            else:
+                new_state_dict[k] = v
+
+        # model.load_state_dict(checkpoint["model_state_dict"])
+        model.load_state_dict(new_state_dict)
+        print(new_state_dict)
+
         del checkpoint
         print('=> loading model from {}'.format(C.io.model_initialize_file))
 

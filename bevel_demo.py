@@ -1,49 +1,3 @@
-#!/usr/bin/env python
-#
-# %BANNER_BEGIN%
-# ---------------------------------------------------------------------
-# %COPYRIGHT_BEGIN%
-#
-#  Magic Leap, Inc. ("COMPANY") CONFIDENTIAL
-#
-#  Unpublished Copyright (c) 2018
-#  Magic Leap, Inc., All Rights Reserved.
-#
-# NOTICE:  All information contained herein is, and remains the property
-# of COMPANY. The intellectual and technical concepts contained herein
-# are proprietary to COMPANY and may be covered by U.S. and Foreign
-# Patents, patents in process, and are protected by trade secret or
-# copyright law.  Dissemination of this information or reproduction of
-# this material is strictly forbidden unless prior written permission is
-# obtained from COMPANY.  Access to the source code contained herein is
-# hereby forbidden to anyone except current COMPANY employees, managers
-# or contractors who have executed Confidentiality and Non-disclosure
-# agreements explicitly covering such access.
-#
-# The copyright notice above does not evidence any actual or intended
-# publication or disclosure  of  this source code, which includes
-# information that is confidential and/or proprietary, and is a trade
-# secret, of  COMPANY.   ANY REPRODUCTION, MODIFICATION, DISTRIBUTION,
-# PUBLIC  PERFORMANCE, OR PUBLIC DISPLAY OF OR THROUGH USE  OF THIS
-# SOURCE CODE  WITHOUT THE EXPRESS WRITTEN CONSENT OF COMPANY IS
-# STRICTLY PROHIBITED, AND IN VIOLATION OF APPLICABLE LAWS AND
-# INTERNATIONAL TREATIES.  THE RECEIPT OR POSSESSION OF  THIS SOURCE
-# CODE AND/OR RELATED INFORMATION DOES NOT CONVEY OR IMPLY ANY RIGHTS
-# TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS, OR TO MANUFACTURE,
-# USE, OR SELL ANYTHING THAT IT  MAY DESCRIBE, IN WHOLE OR IN PART.
-#
-# %COPYRIGHT_END%
-# ----------------------------------------------------------------------
-# %AUTHORS_BEGIN%
-#
-#  Originating Authors: Daniel DeTone (ddetone)
-#                       Tomasz Malisiewicz (tmalisiewicz)
-#  Revision author: Siyu Huang
-#
-# %AUTHORS_END%
-# --------------------------------------------------------------------*/
-# %BANNER_END%
-
 import argparse
 import glob
 import numpy as np
@@ -53,19 +7,12 @@ import cv2 as cv
 import torch
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
+# variables
 threshold = 0.4
-
-
-myjet = np.array([[0., 0., 0.5],
-                  [0., 0., 0.99910873],
-                  [0., 0.37843137, 1.],
-                  [0., 0.83333333, 1.],
-                  [0.30044276, 1., 0.66729918],
-                  [0.66729918, 1., 0.30044276],
-                  [1., 0.90123457, 0.],
-                  [1., 0.48002905, 0.],
-                  [0.99910873, 0.07334786, 0.],
-                  [0.5, 0., 0.]])
+model = 'HR'
+input_dir = '/nas/UnivisionAI/development/bevel/data/gds/img'
+output_dir = '/nas/UnivisionAI/development/bevel/fclp/output'
+ckpt = '/nas/UnivisionAI/development/bevel/fclp/output/230823-132101-HR/checkpoint_best.pth.tar'
 
 
 class VideoStreamer(object):
@@ -178,6 +125,93 @@ class VideoStreamer(object):
         return (input_image, image, True)
 
 
+class ImageSteamer:
+    def __init__(self, input_dir, img_glob):
+        # list images that satisfy img_glob
+        self.index = []
+        search = os.path.join(input_dir, img_glob)
+        self.listing = glob.glob(search)
+        if len(self.listing) == 0:
+            raise IOError('No images were found (maybe bad \'--img_glob\' parameter?)')
+
+    def read_image(self, index):
+        """ Read image as grayscale and resize to img_size.
+        Inputs
+          impath: Path to input image.
+          img_size: (W, H) tuple specifying resize size.
+        Returns
+          grayim: float32 numpy array sized H x W with values in range [0, 1].
+        """
+        if self.needsort:
+            impath = self.listing[self.ordername[index]]
+        else:
+            impath = self.listing[index]
+
+        image = cv.imread(impath)
+        grayim = cv.cvtColor(image, cv.COLOR_RGB2GRAY)
+
+        if grayim is None:
+            raise Exception('Error reading image %s' % impath)
+        # Image is resized via opencv.
+        # interp = cv.INTER_AREA
+        return grayim, image
+
+    def next_frame(self):
+        """ Return the next frame, and increment internal counter.
+        Returns
+           image: Next H x W image.
+           status: True or False depending whether image was loaded.
+        """
+        if self.i == self.maxlen:
+            return (None, None, False)
+        if self.camera:
+            ret, image = self.cap.read()
+            if ret is False:
+                print('VideoStreamer: Cannot get image from camera (maybe bad --camid?)')
+                return (None, None, False)
+            if self.video_file:
+                self.cap.set(cv.CAP_PROP_POS_FRAMES, self.listing[self.i])
+            # input_image = cv.resize(image, (self.sizer[1], self.sizer[0]),
+            #                         interpolation=cv.INTER_AREA)
+            input_image = image
+            input_image = cv.cvtColor(input_image, cv.COLOR_RGB2GRAY)
+        else:
+            # image_file = self.listing[self.i]
+            input_image, image = self.read_image(self.i)
+        # Increment internal counter.
+        self.i = self.i + 1
+        return (input_image, image, True)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 class FClipDetect:
     def __init__(self, modeluse, ckpt=None):
         from test import build_model, C, M
@@ -235,6 +269,19 @@ class FClipDetect:
 
 
 if __name__ == '__main__':
+
+    # make output directories
+    os.makedirs(output_dir, exist_ok=True)
+
+    # image streamer
+    image_streamer = ImageStreamer(input_dir=input_dir, img_glob='*.png')
+
+
+
+
+
+
+
 
     # Parse command line arguments.
     parser = argparse.ArgumentParser(description='Line Demo.')

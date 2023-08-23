@@ -11,6 +11,7 @@ Options:
    -h --help                       Show this screen.
    -d --devices <devices>          Comma seperated GPU devices [default: 0]
    -i --identifier <identifier>    Folder identifier [default: default-lr]
+   -o --outputdir <outputdir>      Output destination
 """
 
 import os
@@ -36,11 +37,11 @@ from FClip.lr_schedulers import init_lr_scheduler
 from FClip.trainer import Trainer
 
 
-def get_outdir(identifier):
+def get_outdir(identifier, outputdir):
     # load config
     name = str(datetime.datetime.now().strftime("%y%m%d-%H%M%S"))
     name += "-%s" % identifier
-    outdir = osp.join(osp.expanduser(C.io.logdir), name)
+    outdir = osp.join(osp.expanduser(outputdir), name)
     if not osp.exists(outdir):
         os.makedirs(outdir)
     C.io.resume_from = outdir
@@ -102,6 +103,7 @@ def main():
     np.random.seed(0)
     torch.manual_seed(0)
 
+    # gpu & cuda setup
     device_name = "cpu"
     os.environ["CUDA_VISIBLE_DEVICES"] = args["--devices"]
     if torch.cuda.is_available():
@@ -144,7 +146,7 @@ def main():
     else:
         raise NotImplementedError
 
-    outdir = get_outdir(args["--identifier"])
+    outdir = get_outdir(args["--identifier"], args["--outputdir"])
     print("outdir:", outdir)
     if M.backbone in ["hrnet"]:
         shutil.copy("config/w32_384x288_adam_lr1e-3.yaml", f"{outdir}/w32_384x288_adam_lr1e-3.yaml")

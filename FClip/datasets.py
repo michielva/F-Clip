@@ -1,5 +1,6 @@
 import glob
 import cv2
+import os
 
 import numpy as np
 import torch
@@ -41,7 +42,7 @@ class LineDataset(Dataset):
         return len(self.filelist)
 
     def _get_im_name(self, idx):
-        if self.dataset in ["shanghaiTech", "york"]:
+        if self.dataset in ["shanghaiTech", "york", "bevel"]:
             iname = self.filelist[idx][:-10] + ".png"
         else:
             raise ValueError("no such name!")
