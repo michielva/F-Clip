@@ -111,18 +111,18 @@ def build_model(cpu=False):
             checkpoint = torch.load(C.io.model_initialize_file)
 
         # fix for state_dict errors
-        new_state_dict = OrderedDict()
-        for k, v in checkpoint['model_state_dict'].items():
-            print(k)
-            if k.startswith('backbone'):
-                new_state_dict['module.' + k] = v
-                print(f'changed name for {k}')
-            else:
-                new_state_dict[k] = v
+        # new_state_dict = OrderedDict()
+        # for k, v in checkpoint['model_state_dict'].items():
+        #     print(k)
+        #     if k.startswith('backbone'):
+        #         new_state_dict['module.' + k] = v
+        #         print(f'changed name for {k}')
+        #     else:
+        #         new_state_dict[k] = v
 
-        # model.load_state_dict(checkpoint["model_state_dict"])
-        model.load_state_dict(new_state_dict)
-        print(new_state_dict)
+        model.load_state_dict(checkpoint["model_state_dict"])
+        # model.load_state_dict(new_state_dict)
+        # print(new_state_dict)
 
         del checkpoint
         print('=> loading model from {}'.format(C.io.model_initialize_file))

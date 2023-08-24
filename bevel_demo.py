@@ -125,7 +125,7 @@ class VideoStreamer(object):
         return (input_image, image, True)
 
 
-class ImageSteamer:
+class ImageStreamer:
     def __init__(self, input_dir, img_glob):
         # list images that satisfy img_glob
         self.index = []
@@ -274,7 +274,7 @@ if __name__ == '__main__':
     os.makedirs(output_dir, exist_ok=True)
 
     # image streamer
-    image_streamer = ImageStreamer(input_dir=input_dir, img_glob='*.png')
+    image_stream = ImageStreamer(input_dir=input_dir, img_glob='*.png')
 
 
 
