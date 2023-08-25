@@ -149,6 +149,7 @@ class VideoStreamer(object):
             raise Exception('Error reading image %s' % impath)
         # Image is resized via opencv.
         # interp = cv.INTER_AREA
+
         return grayim, image
 
     def next_frame(self):

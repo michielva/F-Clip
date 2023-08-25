@@ -91,8 +91,12 @@ class LineDataset(Dataset):
         else:
             raise NotImplementedError
 
+        # old implementation
         image = (image_ - M.image.mean) / M.image.stddev
         image = np.rollaxis(image, 2).copy()
+
+        # new implementation
+        # image = image_ / 255.
 
         return torch.from_numpy(image).float(), meta, target
 

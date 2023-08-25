@@ -39,7 +39,7 @@ model:
       loss_weight: 1.
 
   # data augment: expand
-  crop: True
+  crop: False
   crop_factor: 1.6
   resolution: 128
 

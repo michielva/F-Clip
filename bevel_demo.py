@@ -1,374 +1,157 @@
-import argparse
 import glob
+from datetime import datetime
+import cv2
 import numpy as np
 import os
 import time
 import cv2 as cv
 import torch
-os.environ['KMP_DUPLICATE_LIB_OK']='True'
+from bevel_test import build_model, C, M
+import matplotlib.pyplot as plt
+
 
 # variables
 threshold = 0.4
-model = 'HR'
-input_dir = '/nas/UnivisionAI/development/bevel/data/gds/img'
-output_dir = '/nas/UnivisionAI/development/bevel/fclp/output'
-ckpt = '/nas/UnivisionAI/development/bevel/fclp/output/230823-132101-HR/checkpoint_best.pth.tar'
-
-
-class VideoStreamer(object):
-    """ Class to help process image streams. Three types of possible inputs:"
-      1.) USB Webcam.
-      2.) A directory of images (files in directory matching 'img_glob').
-      3.) A video file, such as an .mp4 or .avi file.
-    """
-
-    def __init__(self, basedir, camid, skip, img_glob):
-        self.cap = []
-        self.camera = False
-        self.video_file = False
-        self.listing = []
-        self.i = 0
-        self.skip = skip
-        self.needsort = False
-        # If the "basedir" string is the word camera, then use a webcam.
-        if basedir == "camera/" or basedir == "camera":
-            print('==> Processing Webcam Input.')
-            self.cap = cv.VideoCapture(camid)
-            self.listing = range(0, self.maxlen)
-            self.camera = True
-        else:
-            # Try to open as a video.
-            self.cap = cv.VideoCapture(basedir)
-            lastbit = basedir[-4:len(basedir)]
-            if (type(self.cap) == list or not self.cap.isOpened()) and (lastbit == '.mp4'):
-                raise IOError('Cannot open movie file')
-            elif type(self.cap) != list and self.cap.isOpened() and (lastbit != '.txt'):
-                print('==> Processing Video Input.')
-                num_frames = int(self.cap.get(cv.CAP_PROP_FRAME_COUNT))
-                self.listing = range(0, num_frames)
-                self.listing = self.listing[::self.skip]
-                self.camera = True
-                self.video_file = True
-                self.maxlen = len(self.listing)
-            else:
-                print('==> Processing Image Directory Input.')
-                minname_len = 1000000
-                maxname_len = 0
-                self.index = []
-                search = os.path.join(basedir, img_glob)
-                self.listing = glob.glob(search)
-                for imname in self.listing:
-                    name = imname.split('/')[-1]
-                    if len(name) > maxname_len:
-                        maxname_len = len(name)
-                    if (len(name)) < minname_len:
-                        minname_len = len(name)
-                if (minname_len) != maxname_len:
-                    for imname in self.listing:
-                        name = imname.split('/')[-1]
-                        name = name.rjust(maxname_len, '0')
-                        self.index.append(name)
-                    self.needsort = True
-                else:
-                    self.index = self.listing
-                self.ordername = np.argsort(self.index)
-                self.maxlen = len(self.ordername)
-                if self.maxlen == 0:
-                    raise IOError('No images were found (maybe bad \'--img_glob\' parameter?)')
-
-    def read_image(self, index):
-        """ Read image as grayscale and resize to img_size.
-        Inputs
-          impath: Path to input image.
-          img_size: (W, H) tuple specifying resize size.
-        Returns
-          grayim: float32 numpy array sized H x W with values in range [0, 1].
-        """
-        if self.needsort:
-            impath = self.listing[self.ordername[index]]
-        else:
-            impath = self.listing[index]
-
-        image = cv.imread(impath)
-        grayim = cv.cvtColor(image, cv.COLOR_RGB2GRAY)
-
-        if grayim is None:
-            raise Exception('Error reading image %s' % impath)
-        # Image is resized via opencv.
-        # interp = cv.INTER_AREA
-        return grayim, image
-
-    def next_frame(self):
-        """ Return the next frame, and increment internal counter.
-        Returns
-           image: Next H x W image.
-           status: True or False depending whether image was loaded.
-        """
-        if self.i == self.maxlen:
-            return (None, None, False)
-        if self.camera:
-            ret, image = self.cap.read()
-            if ret is False:
-                print('VideoStreamer: Cannot get image from camera (maybe bad --camid?)')
-                return (None, None, False)
-            if self.video_file:
-                self.cap.set(cv.CAP_PROP_POS_FRAMES, self.listing[self.i])
-            # input_image = cv.resize(image, (self.sizer[1], self.sizer[0]),
-            #                         interpolation=cv.INTER_AREA)
-            input_image = image
-            input_image = cv.cvtColor(input_image, cv.COLOR_RGB2GRAY)
-        else:
-            # image_file = self.listing[self.i]
-            input_image, image = self.read_image(self.i)
-        # Increment internal counter.
-        self.i = self.i + 1
-        return (input_image, image, True)
+model = 'HG2_LB'
+input_dir = '/nas/UnivisionAI/development/bevel/data/raw/train'
+output_dir = '/nas/UnivisionAI/development/bevel/fclp/output/results'
+ckpt = '/nas/UnivisionAI/development/bevel/fclp/output/230825-094845-HG2_LB/checkpoint_lastest.pth.tar'
 
 
 class ImageStreamer:
-    def __init__(self, input_dir, img_glob):
-        # list images that satisfy img_glob
-        self.index = []
-        search = os.path.join(input_dir, img_glob)
-        self.listing = glob.glob(search)
-        if len(self.listing) == 0:
+    """Streams grayscale images from a directory"""
+    def __init__(self, input_directory, img_glob):
+        # list images in the input directory that satisfy img_glob
+        print('\n==> Loading image paths.')
+        search = os.path.join(input_directory, img_glob)
+        self.list_img_paths = glob.glob(search)
+        self.amount_images = len(self.list_img_paths)
+
+        # no images are found
+        if len(self.list_img_paths) == 0:
             raise IOError('No images were found (maybe bad \'--img_glob\' parameter?)')
-
-    def read_image(self, index):
-        """ Read image as grayscale and resize to img_size.
-        Inputs
-          impath: Path to input image.
-          img_size: (W, H) tuple specifying resize size.
-        Returns
-          grayim: float32 numpy array sized H x W with values in range [0, 1].
-        """
-        if self.needsort:
-            impath = self.listing[self.ordername[index]]
         else:
-            impath = self.listing[index]
+            print(f'==> Successfully loaded {self.amount_images} image paths.')
 
-        image = cv.imread(impath)
-        grayim = cv.cvtColor(image, cv.COLOR_RGB2GRAY)
+    def __iter__(self):
+        self.index = 0
+        return self
 
-        if grayim is None:
-            raise Exception('Error reading image %s' % impath)
-        # Image is resized via opencv.
-        # interp = cv.INTER_AREA
-        return grayim, image
-
-    def next_frame(self):
-        """ Return the next frame, and increment internal counter.
-        Returns
-           image: Next H x W image.
-           status: True or False depending whether image was loaded.
-        """
-        if self.i == self.maxlen:
-            return (None, None, False)
-        if self.camera:
-            ret, image = self.cap.read()
-            if ret is False:
-                print('VideoStreamer: Cannot get image from camera (maybe bad --camid?)')
-                return (None, None, False)
-            if self.video_file:
-                self.cap.set(cv.CAP_PROP_POS_FRAMES, self.listing[self.i])
-            # input_image = cv.resize(image, (self.sizer[1], self.sizer[0]),
-            #                         interpolation=cv.INTER_AREA)
-            input_image = image
-            input_image = cv.cvtColor(input_image, cv.COLOR_RGB2GRAY)
+    def __next__(self):
+        if self.index < self.amount_images:
+            # todo: grayscale
+            # image = cv.imread(self.list_img_paths[self.index], cv.IMREAD_GRAYSCALE)
+            image = cv.imread(self.list_img_paths[self.index])
+            image_name = os.path.basename(self.list_img_paths[self.index])
+            self.index += 1
+            return image, image_name
         else:
-            # image_file = self.listing[self.i]
-            input_image, image = self.read_image(self.i)
-        # Increment internal counter.
-        self.i = self.i + 1
-        return (input_image, image, True)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+            raise StopIteration
 
 
 class FClipDetect:
     def __init__(self, modeluse, ckpt=None):
-        from test import build_model, C, M
 
-        if modeluse == 'HG1_D3':
-            config_file = 'config/fclip_HG1_D3.yaml'
-        elif modeluse == 'HG1':
-            config_file = 'config/fclip_HG1.yaml'
-        elif modeluse == 'HG2':
-            config_file = 'config/fclip_HG2.yaml'
-        elif modeluse == 'HG2_LB':
-            config_file = 'config/fclip_HG2_LB.yaml'
-        elif modeluse == 'HR':
-            config_file = 'config/fclip_HR.yaml'
+        print(f'\n==> Loading {modeluse} model from checkpoint file {ckpt}')
+
+        # load base config file & update it with model specific content
+        if modeluse in ['HG1_D3', 'HG1', 'HG2', 'HG2_LB', 'HR']:
+            config_file = f'config/fclip_{modeluse}.yaml'
         else:
-            raise ValueError("")
-        print(f'Using config file: {config_file}')
-
+            raise ValueError('Incorrect model was given.')
+        print(f'==> Using config file: {config_file}')
         C.update(C.from_yaml(filename='config/base.yaml'))
         C.update(C.from_yaml(filename=config_file))
         M.update(C.model)
         C.io.model_initialize_file = ckpt
 
+        # set up device
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         iscpu = False if torch.cuda.is_available() else True
-        print('Using device: ', self.device)
+        print('==> Using device: ', self.device)
 
+        # load model
         self.model = build_model(cpu=iscpu)
         self.model.to(self.device)
+        print('==> Successfully loaded model.\n')
+
+        # get input resolution, mean & standard deviation of images
         self.input_resolution = (M.resolution * 4, M.resolution * 4)
         self.image_mean = M.image.mean
         self.image_stddev = M.image.stddev
 
     def detect(self, img):
-        H_img, W_img = img.shape[:2]
-        inp = cv.resize(img, self.input_resolution)
-        inp = inp[:, :, ::-1]  # convert BGR to RGB
-        H, W, C = inp.shape
+        # resize image
+        orig_height, orig_width = img.shape[:2]
+        input_img = cv.resize(img, self.input_resolution)
+        input_img = input_img[:, :, ::-1]  # BGR to RGB
+        resized_height, resized_width, channels = input_img.shape
 
-        inp = (inp.astype(np.float32) - self.image_mean) / self.image_stddev
-        inp = torch.from_numpy(inp.transpose(2, 0, 1)).float().unsqueeze(0).to(device=self.device)
-        input_dict = {"image": inp}
+        # normalize input
+        input_img = (input_img.astype(np.float32) - self.image_mean) / self.image_stddev
+        input_img = torch.from_numpy(input_img.transpose(2, 0, 1)).float().unsqueeze(0).to(device=self.device)
+        input_dict = {"image": input_img}
+
+        # run inference for input image
         with torch.no_grad():
             outputs = self.model(input_dict, isTest=True)
-            lines = outputs["heatmaps"]["lines"][0] * 4
-            score = outputs["heatmaps"]["score"][0]
-            lines = lines[score > threshold]
+            lines = outputs["heatmaps"]["lines"][0][:5] * 4
+            scores = outputs["heatmaps"]["score"][0][:5]
+            # lines = lines[score > threshold]
 
-        lines[:, :, 0] = lines[:, :, 0] * H_img / H
-        lines[:, :, 1] = lines[:, :, 1] * W_img / W
+        # calculate back to original size
+        lines[:, :, 0] = lines[:, :, 0] * orig_height / resized_height
+        lines[:, :, 1] = lines[:, :, 1] * orig_width / resized_width
         if torch.cuda.is_available():
-            return lines.cpu().numpy()
+            lines = lines.cpu().numpy()
+            scores = scores.cpu().numpy()
         else:
-            return lines.numpy()
+            lines = lines.numpy()
+            scores = scores.numpy()
+
+        return lines, scores
 
 
 if __name__ == '__main__':
 
     # make output directories
+    output_dir = output_dir + f'/{datetime.now().strftime("%d%m%Y_%H%M%S")}_{model}'
     os.makedirs(output_dir, exist_ok=True)
 
-    # image streamer
-    image_stream = ImageStreamer(input_dir=input_dir, img_glob='*.png')
+    # load image streamer
+    image_stream = ImageStreamer(input_directory=input_dir, img_glob='*.png')
 
+    # load model
+    detector = FClipDetect(model, ckpt)
 
-
-
-
-
-
-
-    # Parse command line arguments.
-    parser = argparse.ArgumentParser(description='Line Demo.')
-    parser.add_argument('input', type=str, default='',
-                        help='Image directory or movie file or "camera" (for webcam).')
-    parser.add_argument('--model', type=str, default='HR',
-                        help='choose the pretrained model (option: HG1, HG2, HR).')
-    parser.add_argument('--output_dir', type=str, default='logs/demo_results',
-                        help='output directory.')
-    parser.add_argument('--ckpt', type=str, default='ckpt',
-                        help='directory to checkpoint file.')
-    parser.add_argument('--camid', type=int, default=0,
-                        help='OpenCV webcam video capture ID, usually 0 or 1 (default: 0).')
-    parser.add_argument('--img_glob', type=str, default='*.png',
-                        help='Glob match if directory of images is specified (default: \'*.png\').')
-    parser.add_argument('--skip', type=int, default=1,
-                        help='Images to skip if input is movie or directory (default: 1).')
-    parser.add_argument('--waitkey', type=int, default=1,
-                        help='OpenCV waitkey time in ms (default: 1).')
-    parser.add_argument('--display', type=bool, default=False,
-                        help='Whether to create a window to display the demo or not.')
-    opt = parser.parse_args()
-    print(opt)
-    print(opt.output_dir)
-    os.makedirs(opt.output_dir, exist_ok=True)
-
-    print('==> Loading video.')
-    # This class helps load input images from different sources.
-    vs = VideoStreamer(opt.input, opt.camid, opt.skip, opt.img_glob)
-    print('==> Successfully loaded video.')
-
-    print(f'Load model with parameters opt.model: {opt.model} and opt.ckpt {opt.ckpt}')
-    detector = FClipDetect(opt.model, opt.ckpt)
-
-    # Create a window to display the demo.
-    if opt.display:
-        win = 'Line Tracker'
-        cv.namedWindow(win)
-
-    print('==> Running Demo.')
+    # run demo on images
     t_begin = time.time()
-    frame = 0
-    while True:
+    print('\n==> Running demo.')
+    for i, (img, img_name) in enumerate(image_stream):
+        print(f'Image {i+1}: {img_name}')
+        lines, scores = detector.detect(img)
 
-        start = time.time()
-        img, oriimg, status = vs.next_frame()  # gray
-        print("\r", end="")
-        print(f"Processing: {vs.i}", end="")
-        if status is False:
-            break
+        output_img = img
+        for i, line in enumerate(lines):
+            h, w, _ = output_img.shape
+            start_coord = (int(lines[i][0][1]), int(lines[i][0][0]))
+            end_coord = (int(lines[i][1][1]), int(lines[i][1][0]))
+            if scores[i] > threshold:
+                color = (5, 133, 41)
+                position = (start_coord[0]+10, start_coord[1]-10)
+            else:
+                color = (9, 3, 173)
+                position = (end_coord[0]-50, end_coord[1]-10)
 
-        # Get points and descriptors.
-        start1 = time.time()
-        lines = detector.detect(oriimg)
-        print('lines')
-        end1 = time.time()
+            position = (max(min(position[0], w-100), 100), max(min(position[1], h-50), 50))
 
-        out = oriimg
-        for i in range(lines.shape[0]):
-            # print(lines[i])
-            start_coor = (int(lines[i][0][1]), int(lines[i][0][0]))
-            end_coor = (int(lines[i][1][1]), int(lines[i][1][0]))
-            cv.line(out, start_coor, end_coor, (0, 0, 255), 2, lineType=16)  # red
-            # cv.line(out, lines[i, 0, ::-1], lines[i, 1, ::-1], (110, 215, 245), 2, lineType=16)
+            cv.line(output_img, start_coord, end_coord, color, 1, lineType=16)
+            cv.putText(output_img, text=f'{scores[i]:.2f}', org=position, color=color, thickness=2,
+                       fontFace=cv.FONT_HERSHEY_SCRIPT_SIMPLEX, fontScale=1, lineType=16)
+            cv.imwrite(f"{output_dir}/{img_name}_test.png", output_img)
 
-        cv.imwrite(f"{opt.output_dir}/{vs.i:04}.png", out)
-        print('image saved')
-
-        # Display visualization image to screen.
-        if opt.display:
-            cv.imshow(win, out)
-            key = cv.waitKey(opt.waitkey) & 0xFF
-            if key == ord('q'):
-                print('Quitting, \'q\' pressed.')
-                break
-
-        end = time.time()
-
-        net_t = (1. / float(end1 - start))
-        total_t = (1. / float(end - start))
-        frame = frame + 1
-
-    if opt.display:
-        # Close any remaining windows.
-        cv.destroyAllWindows()
     t_end = time.time()
-    print("Total time spent:%f" % (t_end - t_begin))
-    print("Average frame rate:%f" % (frame / (t_end - t_begin)))
+    print(f'Total time spent: {t_end - t_begin} s')
+    print(f'Average frame rate: {image_stream.amount_images / (t_end - t_begin)} frames/s')
 
-    print('==> Finshed Demo.')
+    print('==> Finished Demo.')
