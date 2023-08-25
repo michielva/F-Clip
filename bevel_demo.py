@@ -1,6 +1,6 @@
 import glob
+import json
 from datetime import datetime
-import cv2
 import numpy as np
 import os
 import time
@@ -117,6 +117,16 @@ if __name__ == '__main__':
     # make output directories
     output_dir = output_dir + f'/{datetime.now().strftime("%d%m%Y_%H%M%S")}_{model}'
     os.makedirs(output_dir, exist_ok=True)
+
+    # save parameters in json file
+    parameters = {
+        'model': model,
+        'input_dir': input_dir,
+        'ckpt_used': ckpt,
+        'threshold': threshold
+    }
+    with open(f'{output_dir}/parameters.json', 'w') as f:
+        json.dump(parameters, f)
 
     # load image streamer
     image_stream = ImageStreamer(input_directory=input_dir, img_glob='*.png')
