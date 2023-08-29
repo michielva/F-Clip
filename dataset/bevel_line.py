@@ -112,6 +112,7 @@ def save_heatmap(path, image, lines, data_dst):
         lcoff=lcoff,
         lleng=lleng,
         angle=angle,
+        lpos=lines
     )
 
 

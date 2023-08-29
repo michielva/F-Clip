@@ -3,7 +3,7 @@ io:
   datadir: /nas/UnivisionAI/development/bevel/data/raw  # /home/dxl/Data/wireframe     wireframe1_datarota_3w
   num_workers: 4
   tensorboard_port: 0
-  validation_interval: 3000
+  validation_interval: 2000
   visual_num: 2
 
 model:
@@ -11,7 +11,7 @@ model:
       mean: [109.730, 103.832, 98.681]
       stddev: [22.275, 22.124, 23.229]
 
-  batch_size: 6
+  batch_size: 24
   eval_batch_size: 2
 
   # backbone multi-task parameters

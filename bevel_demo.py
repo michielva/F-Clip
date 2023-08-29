@@ -12,10 +12,11 @@ import matplotlib.pyplot as plt
 
 # variables
 threshold = 0.4
-model = 'HG2_LB'
-input_dir = '/nas/UnivisionAI/development/bevel/data/raw/train'
-output_dir = '/nas/UnivisionAI/development/bevel/fclp/output/results'
-ckpt = '/nas/UnivisionAI/development/bevel/fclp/output/230825-094845-HG2_LB/checkpoint_lastest.pth.tar'
+model = 'HR'
+extra_annotation = 'valid_set'
+input_dir = '/nas/UnivisionAI/development/bevel/data/raw/valid'
+output_dir = '/nas/UnivisionAI/development/bevel/fclp/output/inference'
+ckpt = '/nas/UnivisionAI/development/bevel/fclp/output/training/230829-075708-HR/checkpoint_lastest.pth.tar'
 
 
 class ImageStreamer:
@@ -115,7 +116,7 @@ class FClipDetect:
 if __name__ == '__main__':
 
     # make output directories
-    output_dir = output_dir + f'/{datetime.now().strftime("%d%m%Y_%H%M%S")}_{model}'
+    output_dir = output_dir + f'/{datetime.now().strftime("%d%m%Y_%H%M%S")}_{model}_{extra_annotation}'
     os.makedirs(output_dir, exist_ok=True)
 
     # save parameters in json file

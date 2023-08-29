@@ -18,5 +18,5 @@ model:
 
 optim:
   lr: 4.0e-3
-  max_epoch: 220
+  max_epoch: 300
   lr_decay_epoch: [160,200]
