@@ -41,6 +41,7 @@ class Trainer(object):
         self.lr_decay_epoch = C.optim.lr_decay_epoch
         self.num_stacks = C.model.num_stacks
         self.mean_loss = self.best_mean_loss = bml
+        self.val_loss_dict, self.train_loss_dict = {}, {}
 
         self.loss_labels = None
         self.acc_label = None
@@ -132,7 +133,9 @@ class Trainer(object):
                         self.visual.plot_samples(fn, i, H, target, meta, f"{viz}/{index:06}")
                 self.printer.tprint(f"Validation [{batch_idx:5d}/{len(self.val_loader):5d}]", " " * 25)
 
+        self.val_loss_dict[self.epoch] = self.metrics[0][0]
         self.printer.valid_log(len(self.val_loader), self.epoch, self.iteration, self.batch_size, self.metrics[0])
+        self.printer.plot_loss(fname='train_val_loss.png', train_loss=self.train_loss_dict, val_loss=self.val_loss_dict)
         self.mean_loss = total_loss / len(self.val_loader)
 
         if isckpt:
@@ -205,6 +208,7 @@ class Trainer(object):
                 if num_images > 0:
                     self.printer.valid_log(1, self.epoch, self.iteration, self.batch_size, self.avg_metrics[0],
                                            csv_name="train_loss.csv", isprint=False)
+                    self.train_loss_dict[self.epoch] = self.avg_metrics[0][0]
                     self.validate()
                     time = timer()
 

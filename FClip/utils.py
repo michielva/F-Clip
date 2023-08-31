@@ -194,6 +194,18 @@ class ModelPrinter():
         if isprint:
             self.pprint(prt_str, " " * 7)
 
+    def plot_loss(self, fname, train_loss, val_loss):
+        print(f'train_loss: {train_loss}')
+        print(f'val_loss: {val_loss}')
+        fpath = f'{self.out}/{fname}'
+        plt.plot(list(train_loss.keys()), list(train_loss.values()), color='green', marker='+', label='train_loss')
+        plt.plot(list(val_loss.keys()), list(val_loss.values()), color='blue', marker='+', label='val_loss')
+        plt.xlabel('Epoch')
+        plt.ylabel('Loss')
+        plt.title('Training & validation loss')
+        plt.legend()
+        plt.savefig(fpath)
+
     @staticmethod
     def tprint(*args):
         """Temporarily prints things on the screen"""

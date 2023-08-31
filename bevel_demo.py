@@ -12,11 +12,11 @@ import matplotlib.pyplot as plt
 
 # variables
 threshold = 0.4
-model = 'HR'
+model = 'HG2_LB'
 extra_annotation = 'valid_set'
 input_dir = '/nas/UnivisionAI/development/bevel/data/raw/valid'
 output_dir = '/nas/UnivisionAI/development/bevel/fclp/output/inference'
-ckpt = '/nas/UnivisionAI/development/bevel/fclp/output/training/230829-075708-HR/checkpoint_lastest.pth.tar'
+ckpt = '/nas/UnivisionAI/development/bevel/fclp/output/training/230830-140929-HG2_LB/checkpoint_best.pth.tar'
 
 
 class ImageStreamer:
