@@ -128,7 +128,7 @@ def build_model(cpu=False):
 
 
 def main():
-    args = docopt(__doc__)
+    # args = docopt(__doc__)
     C.update(C.from_yaml(filename='config/base.yaml'))
     config_file = args["<yaml-config>"]
     C.update(C.from_yaml(filename=config_file))
@@ -173,6 +173,9 @@ def main():
     # 2. model
     model = build_model()
     model.cuda()
+
+    # export as onnx
+    torch.onnx.export(model, verbose=True)
 
     outdir = args["--identifier"]
     print("outdir:", outdir)

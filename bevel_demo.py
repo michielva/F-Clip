@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 # variables
 threshold = 0.4
-model = 'HG2_LB'
+model_name = 'HG2_LB'
 extra_annotation = 'valid_set'
 input_dir = '/nas/UnivisionAI/development/bevel/data/raw/valid'
 output_dir = '/nas/UnivisionAI/development/bevel/fclp/output/inference'
@@ -81,6 +81,13 @@ class FClipDetect:
         self.image_mean = M.image.mean
         self.image_stddev = M.image.stddev
 
+        # load dummy image
+        # dummy_img =
+
+        # export model to onnx
+
+
+
     def detect(self, img):
         # resize image
         orig_height, orig_width = img.shape[:2]
@@ -116,12 +123,12 @@ class FClipDetect:
 if __name__ == '__main__':
 
     # make output directories
-    output_dir = output_dir + f'/{datetime.now().strftime("%d%m%Y_%H%M%S")}_{model}_{extra_annotation}'
+    output_dir = output_dir + f'/{datetime.now().strftime("%d%m%Y_%H%M%S")}_{model_name}_{extra_annotation}'
     os.makedirs(output_dir, exist_ok=True)
 
     # save parameters in json file
     parameters = {
-        'model': model,
+        'model': model_name,
         'input_dir': input_dir,
         'ckpt_used': ckpt,
         'threshold': threshold
@@ -133,7 +140,9 @@ if __name__ == '__main__':
     image_stream = ImageStreamer(input_directory=input_dir, img_glob='*.png')
 
     # load model
-    detector = FClipDetect(model, ckpt)
+    detector = FClipDetect(model_name, ckpt)
+
+    # for img in image_stream:
 
     # run demo on images
     t_begin = time.time()
